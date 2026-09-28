@@ -1,5 +1,5 @@
 <?php
-$plugin = basename(dirname(__FILE__));
+$plugin = isset($capturePluginName) ? $capturePluginName : basename(dirname(__FILE__));
 $menuEntries = [
     [
         'text' => 'Animatronic Capture',
