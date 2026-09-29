@@ -1957,7 +1957,8 @@ function pollStatus() {
 // 3 times; only surfaces a manual fallback if all auto-attempts fail. Handing the
 // camera back to Live Follow, however, is never automatic — that's a deliberate
 // user action via restoreLiveFollow().
-// If no camera is plugged in at all (daemon reports cam_error 'not_found'), it
+// If no camera is plugged in at all (daemon reports cam_error 'not_found', also
+// after an unplug mid-run), it skips those attempts, shows the bar right away and
 // keeps checking every CAM_SLOW_RETRY_MS so a camera connected later is picked
 // up without a reload. That slow check never touches Live Follow.
 let _camAutoAttempts = 0;
@@ -1986,10 +1987,13 @@ function handleCameraOwnership(s) {
     return;
   }
 
-  if (_camAutoAttempts < 3 && !_camAutoInFlight) {
+  // Nothing plugged in: releasing Live Follow can't help, so skip the fast
+  // claims (which call its release endpoint) and go straight to the slow retry.
+  const missing = s.cam_error === 'not_found';
+  if (!missing && _camAutoAttempts < 3 && !_camAutoInFlight) {
     if (badge) { badge.textContent = 'Reconnecting camera…'; badge.style.display = ''; }
     claimCamera(true);
-  } else if (_camAutoAttempts >= 3) {
+  } else if (missing || _camAutoAttempts >= 3) {
     if (badge) badge.style.display = 'none';
     updateRecoveryText(s.cam_error);
     if (recoveryBar) recoveryBar.style.display = 'flex';
